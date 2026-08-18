@@ -165,7 +165,7 @@ var CFG = {
      rejected as Buyer_Hash_Security. Not a secret we hold - it arrives on the
      inbound URL, so echoing it leaks nothing. If PureSpectrum wants it under a
      different name on the way back, change the value here to the outbound name. */
-  ECHO_PARAMS   : { bsec: 'bsec' }
+  ECHO_PARAMS   : { bsec: ['bsec', 'ps_hash'] }
 };
 
 /* Read the id off the raw URL rather than via URLSearchParams. Panel entry
@@ -182,7 +182,12 @@ function withEcho_(url) {
   for (var inName in CFG.ECHO_PARAMS) {
     if (!Object.prototype.hasOwnProperty.call(CFG.ECHO_PARAMS, inName)) continue;
     var v = readParam_(inName);
-    if (v) url += '&' + CFG.ECHO_PARAMS[inName] + '=' + encodeURIComponent(v);
+    if (!v) continue;
+    var outNames = CFG.ECHO_PARAMS[inName];
+    if (typeof outNames === 'string') outNames = [outNames];
+    for (var i = 0; i < outNames.length; i++) {
+      url += '&' + outNames[i] + '=' + encodeURIComponent(v);
+    }
   }
   return url;
 }
