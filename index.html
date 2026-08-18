@@ -133,20 +133,27 @@
 <script>
 /* ─────────────────────────────────────────────────────────────
    CONFIG — replace these four values before going live.
-   The three redirect URLs come from the PureSpectrum Marketplace
-   survey setup screen. Leave {PID} in place; it is substituted
-   with the respondent id at redirect time.
+   Redirect URLs follow PureSpectrum's fixed format:
+     st=21 complete | st=18 terminate | st=17 over quota
+     st=20 quality  | st=30 dedupe
+   Leave {PID} in place; it is substituted at redirect time.
    ───────────────────────────────────────────────────────────── */
 var CFG = {
   ENDPOINT      : 'https://script.google.com/macros/s/AKfycbxv1RPZYvVV_WFyBRLjyhp3u6LES3f3B3YZBmimZUDipw_sjNeF8OJXx7iyD19Q-guqsA/exec',
-  PID_PARAM     : 'ps_pid',   // inbound query param carrying the respondent id
-  COMPLETE_URL  : 'PASTE_COMPLETE_REDIRECT_URL_HERE',
-  TERMINATE_URL : 'PASTE_TERMINATE_REDIRECT_URL_HERE',
+  PID_PARAM     : 'transaction_id',   // PureSpectrum appends this to the entry link
+  COMPLETE_URL  : 'https://spectrumsurveys.com/surveydone?st=21&transaction_id={PID}',
+  TERMINATE_URL : 'https://spectrumsurveys.com/surveydone?st=18&transaction_id={PID}',
   REQUIRE_PID   : true        // set false to test the form outside the panel
 };
 
-var qs    = new URLSearchParams(location.search);
-var PID   = qs.get(CFG.PID_PARAM) || '';
+/* Read the id off the raw URL rather than via URLSearchParams. Panel entry
+   links are sometimes assembled with the wrong separator, so accept the id
+   whether it arrives after a '?' or an '&'. */
+function readParam_(name) {
+  var m = new RegExp('[?&]' + name + '=([^&#]*)').exec(location.href);
+  return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
+}
+var PID   = readParam_(CFG.PID_PARAM);
 var T0    = Date.now();
 var state = { s1:'', q1:'', q2:'', q3:'' };
 
