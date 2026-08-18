@@ -246,18 +246,34 @@ function finish(outcome, redirectTo) {
   document.getElementById('done').classList.remove('hide');
   document.getElementById('bar').style.width = '100%';
 
-  var go = function () {
-    location.replace(redirectTo.replace('{PID}', encodeURIComponent(PID)));
+  /* The collector may return a signed redirect URL - PureSpectrum's link
+     security requires a ps_hash that must never live in this page, since
+     anyone can read the source. If it returns one, use it; otherwise fall
+     back to the unsigned URL built here. Fires at most once. */
+  var went = false;
+  var go = function (signed) {
+    if (went) return;
+    went = true;
+    location.replace(signed || redirectTo.replace('{PID}', encodeURIComponent(PID)));
   };
 
   fetch(CFG.ENDPOINT, {
     method  : 'POST',
-    mode    : 'no-cors',
     headers : { 'Content-Type': 'text/plain;charset=utf-8' },
     body    : JSON.stringify(payload)
-  }).then(go, go);
+  })
+    .then(function (r) { return r.text(); })
+    .then(function (body) {
+      var signed = null;
+      try {
+        var j = JSON.parse(body);
+        if (j && j.redirect) signed = j.redirect;
+      } catch (e) { /* plain 'ok' response - fall back */ }
+      go(signed);
+    })
+    .catch(function () { go(null); });   // response blocked; the write still happened
 
-  setTimeout(go, 6000);  // hard backstop if the network hangs
+  setTimeout(function () { go(null); }, 6000);  // backstop if the network hangs
 }
 
 /* ── Screener ── */
