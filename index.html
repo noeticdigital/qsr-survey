@@ -62,7 +62,7 @@
   <header>
     <h1>海外の飲食チェーンに関するアンケート</h1>
     <p class="sub">所要時間は約2〜3分です。</p>
-    <div class="bar"><i id="bar" style="width:50%"></i></div>
+    <div class="bar"><i id="bar" style="width:33%"></i></div>
   </header>
 
   <!-- ── Screener ── -->
@@ -79,6 +79,19 @@
       <label class="opt"><input type="radio" name="s1" value="3">
         <span>いいえ、利用していない</span></label>
       <p class="err" id="e-s1">選択してください。</p>
+    </div>
+    <button type="submit">次へ</button>
+  </form>
+
+  <!-- ── Screener 2 (open end, quality gate) ── -->
+  <form id="pg1b" class="hide">
+    <div class="card">
+      <p class="q">日本で一番のお気に入りの飲食店はどこですか。
+        また、その理由も教えてください。<span class="req">*</span></p>
+      <p class="hint">店名と理由をあわせてご記入ください。</p>
+      <textarea id="s2" maxlength="500"></textarea>
+      <div class="count"><span id="cs2">0</span> / 500</div>
+      <p class="err" id="e-s2">店名と、その理由をご記入ください。</p>
     </div>
     <button type="submit">次へ</button>
   </form>
@@ -143,6 +156,8 @@ var CFG = {
   PID_PARAM     : 'transaction_id',   // PureSpectrum appends this to the entry link
   COMPLETE_URL  : 'https://spectrumsurveys.com/surveydone?st=21&transaction_id={PID}',
   TERMINATE_URL : 'https://spectrumsurveys.com/surveydone?st=18&transaction_id={PID}',
+  QUALITY_URL   : 'https://spectrumsurveys.com/surveydone?st=20&transaction_id={PID}',
+  MIN_OPEN_CHARS: 15,         // minimum length for the open-end screener
   REQUIRE_PID   : true        // set false to test the form outside the panel
 };
 
@@ -155,7 +170,7 @@ function readParam_(name) {
 }
 var PID   = readParam_(CFG.PID_PARAM);
 var T0    = Date.now();
-var state = { s1:'', q1:'', q2:'', q3:'' };
+var state = { s1:'', s2:'', q1:'', q2:'', q3:'' };
 
 /* Block direct traffic — panel respondents always arrive with a PID. */
 if (CFG.REQUIRE_PID && !PID) {
@@ -177,12 +192,33 @@ q2.addEventListener('input', function () {
   document.getElementById('c2').textContent = q2.value.length;
 });
 
+var s2 = document.getElementById('s2');
+s2.addEventListener('input', function () {
+  document.getElementById('cs2').textContent = s2.value.length;
+});
+
 function picked(name) {
   var el = document.querySelector('input[name="' + name + '"]:checked');
   return el ? el.value : '';
 }
 function showErr(id, on) {
   document.getElementById('e-' + id).classList.toggle('on', on);
+}
+
+/* Quality gate for the open-end screener. Deliberately conservative: a wrong
+   terminate costs a real respondent, so only obvious junk is rejected. */
+function isJunk_(text) {
+  var t = text.trim();
+  if (t.length < CFG.MIN_OPEN_CHARS) return true;      // too short to be an answer
+  if (/(.)\1{4,}/.test(t)) return true;                // ああああああ / aaaaaa
+  var bare = t.replace(/\s/g, ''), seen = {}, uniq = 0;
+  for (var i = 0; i < bare.length; i++) {
+    if (!seen[bare[i]]) { seen[bare[i]] = 1; uniq++; }
+  }
+  if (uniq <= 3) return true;                          // abababab
+  if (/^(.{1,4})\1{3,}$/.test(bare)) return true;      // asdfasdfasdfasdf
+  if (!/[぀-ゟ゠-ヿ一-鿿a-zA-Z]/.test(t)) return true;
+  return false;                                        // no words at all
 }
 
 /* Fire-and-wait POST, then redirect. Never strand a respondent: if the
@@ -193,6 +229,7 @@ function finish(outcome, redirectTo) {
     pid       : PID,
     outcome   : outcome,
     s1        : state.s1,
+    s2        : state.s2,
     q1        : state.q1,
     q2        : state.q2,
     q3        : state.q3,
@@ -204,6 +241,7 @@ function finish(outcome, redirectTo) {
   };
 
   document.getElementById('pg1').classList.add('hide');
+  document.getElementById('pg1b').classList.add('hide');
   document.getElementById('pg2').classList.add('hide');
   document.getElementById('done').classList.remove('hide');
   document.getElementById('bar').style.width = '100%';
@@ -233,8 +271,23 @@ document.getElementById('pg1').addEventListener('submit', function (e) {
   if (v !== '1') { finish('screenout', CFG.TERMINATE_URL); return; }
 
   this.classList.add('hide');
+  document.getElementById('pg1b').classList.remove('hide');
+  document.getElementById('bar').style.width = '66%';
+  window.scrollTo(0, 0);
+});
+
+/* ── Screener 2: open end + quality gate ── */
+document.getElementById('pg1b').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var v = s2.value.trim();
+  var bad = isJunk_(v);
+  showErr('s2', bad);
+  if (bad) { if (v.length >= CFG.MIN_OPEN_CHARS) { state.s2 = v; finish('screenout_quality', CFG.QUALITY_URL); } return; }
+
+  state.s2 = v;
+  this.classList.add('hide');
   document.getElementById('pg2').classList.remove('hide');
-  document.getElementById('bar').style.width = '75%';
+  document.getElementById('bar').style.width = '85%';
   window.scrollTo(0, 0);
 });
 
