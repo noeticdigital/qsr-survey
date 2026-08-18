@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>海外の飲食チェーンに関するアンケート</title>
+<style>
+  :root{
+    --bg:#f6f6f4; --card:#fff; --ink:#1a1a1a; --muted:#6b6b6b;
+    --line:#e0e0dc; --accent:#1f5fd0; --accent-ink:#fff; --err:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",
+      "Noto Sans JP",sans-serif;
+    line-height:1.7;-webkit-text-size-adjust:100%}
+  .wrap{max-width:680px;margin:0 auto;padding:24px 16px 64px}
+  header{margin-bottom:20px}
+  h1{font-size:1.3rem;margin:0 0 8px;line-height:1.5}
+  .sub{color:var(--muted);font-size:.85rem;margin:0}
+  .bar{height:4px;background:var(--line);border-radius:99px;margin:16px 0 24px;overflow:hidden}
+  .bar>i{display:block;height:100%;width:50%;background:var(--accent);
+    transition:width .3s ease}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:20px;margin-bottom:16px}
+  .q{font-weight:600;font-size:1rem;margin:0 0 4px}
+  .q .req{color:var(--err);font-weight:400;margin-left:4px}
+  .hint{color:var(--muted);font-size:.8rem;margin:0 0 14px}
+  label.opt{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;
+    border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;
+    background:#fff;transition:border-color .15s,background .15s}
+  label.opt:hover{border-color:#b9b9b3}
+  label.opt input{margin:5px 0 0;flex:none;accent-color:var(--accent)}
+  label.opt.sel{border-color:var(--accent);background:#f2f6fe}
+  input[type=text],textarea{width:100%;padding:12px 14px;border:1px solid var(--line);
+    border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+  textarea{min-height:130px;resize:vertical}
+  input[type=text]:focus,textarea:focus{outline:2px solid var(--accent);
+    outline-offset:-1px;border-color:var(--accent)}
+  .count{text-align:right;color:var(--muted);font-size:.75rem;margin-top:6px}
+  .err{color:var(--err);font-size:.82rem;margin-top:8px;display:none}
+  .err.on{display:block}
+  button{width:100%;padding:15px;border:0;border-radius:8px;background:var(--accent);
+    color:var(--accent-ink);font:inherit;font-weight:600;cursor:pointer;
+    transition:opacity .15s}
+  button:hover{opacity:.9}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .msg{text-align:center;padding:56px 20px;color:var(--muted)}
+  .hide{display:none}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#141414;--card:#1e1e1e;--ink:#ededed;--muted:#9a9a9a;
+      --line:#333;--accent:#5b8def}
+    label.opt{background:#1e1e1e}
+    label.opt.sel{background:#1b2537}
+    input[type=text],textarea{background:#181818;color:var(--ink)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>海外の飲食チェーンに関するアンケート</h1>
+    <p class="sub">所要時間は約2〜3分です。</p>
+    <div class="bar"><i id="bar" style="width:50%"></i></div>
+  </header>
+
+  <!-- ── Screener ── -->
+  <form id="pg1">
+    <div class="card">
+      <p class="q">直近の海外渡航中、クイックサービスレストラン（QSR）または
+        ファストフードチェーンを1回以上ご利用になりましたか。
+        また、その店名を覚えていますか。<span class="req">*</span></p>
+      <p class="hint">あてはまるものを1つお選びください。</p>
+      <label class="opt"><input type="radio" name="s1" value="1">
+        <span>はい、利用した（店名も覚えている）</span></label>
+      <label class="opt"><input type="radio" name="s1" value="2">
+        <span>はい、利用した（店名は覚えていない）</span></label>
+      <label class="opt"><input type="radio" name="s1" value="3">
+        <span>いいえ、利用していない</span></label>
+      <p class="err" id="e-s1">選択してください。</p>
+    </div>
+    <button type="submit">次へ</button>
+  </form>
+
+  <!-- ── Main ── -->
+  <form id="pg2" class="hide">
+    <div class="card">
+      <p class="q">Q1. 海外で訪れたことのある飲食チェーンの中で、日本に出店してほしいと
+        思うお店を1つお知らせください。<span class="req">*</span></p>
+      <p class="hint">店名を1つだけご記入ください。</p>
+      <input type="text" id="q1" maxlength="80" autocomplete="off"
+        placeholder="例：〇〇バーガー">
+      <p class="err" id="e-q1">ご記入ください。</p>
+    </div>
+
+    <div class="card">
+      <p class="q">Q2. そのチェーン店に日本へ出店してほしいと思う理由を、
+        詳しく教えてください。<span class="req">*</span></p>
+      <p class="hint">できるだけ具体的にご記入ください（20文字以上）。</p>
+      <textarea id="q2" maxlength="1000"></textarea>
+      <div class="count"><span id="c2">0</span> / 1000</div>
+      <p class="err" id="e-q2">20文字以上でご記入ください。</p>
+    </div>
+
+    <div class="card">
+      <p class="q">Q3. もしそのチェーン店がお住まいの近くにオープンした場合、
+        オープン後3か月以内に利用する可能性はどのくらいありますか。
+        <span class="req">*</span></p>
+      <label class="opt"><input type="radio" name="q3" value="1">
+        <span>1 － 全く訪れないだろう</span></label>
+      <label class="opt"><input type="radio" name="q3" value="2">
+        <span>2 － たぶん訪れないだろう</span></label>
+      <label class="opt"><input type="radio" name="q3" value="3">
+        <span>3 － どちらともいえない</span></label>
+      <label class="opt"><input type="radio" name="q3" value="4">
+        <span>4 － たぶん訪れるだろう</span></label>
+      <label class="opt"><input type="radio" name="q3" value="5">
+        <span>5 － きっと訪れるだろう</span></label>
+      <p class="err" id="e-q3">選択してください。</p>
+    </div>
+
+    <button type="submit" id="submit">送信する</button>
+  </form>
+
+  <div id="done" class="msg hide">送信しています。しばらくお待ちください…</div>
+  <div id="nopid" class="msg hide">
+    このアンケートは調査パネル経由でのみご回答いただけます。
+  </div>
+
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   CONFIG — replace these four values before going live.
+   The three redirect URLs come from the PureSpectrum Marketplace
+   survey setup screen. Leave {PID} in place; it is substituted
+   with the respondent id at redirect time.
+   ───────────────────────────────────────────────────────────── */
+var CFG = {
+  ENDPOINT      : 'PASTE_APPS_SCRIPT_WEB_APP_URL_HERE',
+  PID_PARAM     : 'ps_pid',   // inbound query param carrying the respondent id
+  COMPLETE_URL  : 'PASTE_COMPLETE_REDIRECT_URL_HERE',
+  TERMINATE_URL : 'PASTE_TERMINATE_REDIRECT_URL_HERE',
+  REQUIRE_PID   : true        // set false to test the form outside the panel
+};
+
+var qs    = new URLSearchParams(location.search);
+var PID   = qs.get(CFG.PID_PARAM) || '';
+var T0    = Date.now();
+var state = { s1:'', q1:'', q2:'', q3:'' };
+
+/* Block direct traffic — panel respondents always arrive with a PID. */
+if (CFG.REQUIRE_PID && !PID) {
+  document.getElementById('pg1').classList.add('hide');
+  document.getElementById('nopid').classList.remove('hide');
+}
+
+/* Highlight the selected radio row. */
+document.addEventListener('change', function (e) {
+  if (e.target.type !== 'radio') return;
+  var group = document.getElementsByName(e.target.name);
+  for (var i = 0; i < group.length; i++) {
+    group[i].closest('.opt').classList.toggle('sel', group[i].checked);
+  }
+});
+
+var q2 = document.getElementById('q2');
+q2.addEventListener('input', function () {
+  document.getElementById('c2').textContent = q2.value.length;
+});
+
+function picked(name) {
+  var el = document.querySelector('input[name="' + name + '"]:checked');
+  return el ? el.value : '';
+}
+function showErr(id, on) {
+  document.getElementById('e-' + id).classList.toggle('on', on);
+}
+
+/* Fire-and-wait POST, then redirect. Never strand a respondent: if the
+   write fails we still send them back to the panel, because a lost row
+   is recoverable and a stuck respondent is not. */
+function finish(outcome, redirectTo) {
+  var payload = {
+    pid       : PID,
+    outcome   : outcome,
+    s1        : state.s1,
+    q1        : state.q1,
+    q2        : state.q2,
+    q3        : state.q3,
+    loi_sec   : Math.round((Date.now() - T0) / 1000),
+    ua        : navigator.userAgent,
+    lang      : navigator.language,
+    query     : location.search,
+    ts        : new Date().toISOString()
+  };
+
+  document.getElementById('pg1').classList.add('hide');
+  document.getElementById('pg2').classList.add('hide');
+  document.getElementById('done').classList.remove('hide');
+  document.getElementById('bar').style.width = '100%';
+
+  var go = function () {
+    location.replace(redirectTo.replace('{PID}', encodeURIComponent(PID)));
+  };
+
+  fetch(CFG.ENDPOINT, {
+    method  : 'POST',
+    mode    : 'no-cors',
+    headers : { 'Content-Type': 'text/plain;charset=utf-8' },
+    body    : JSON.stringify(payload)
+  }).then(go, go);
+
+  setTimeout(go, 6000);  // hard backstop if the network hangs
+}
+
+/* ── Screener ── */
+document.getElementById('pg1').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var v = picked('s1');
+  showErr('s1', !v);
+  if (!v) return;
+
+  state.s1 = v;
+  if (v !== '1') { finish('screenout', CFG.TERMINATE_URL); return; }
+
+  this.classList.add('hide');
+  document.getElementById('pg2').classList.remove('hide');
+  document.getElementById('bar').style.width = '75%';
+  window.scrollTo(0, 0);
+});
+
+/* ── Main ── */
+document.getElementById('pg2').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var q1v = document.getElementById('q1').value.trim();
+  var q2v = q2.value.trim();
+  var q3v = picked('q3');
+
+  showErr('q1', !q1v);
+  showErr('q2', q2v.length < 20);
+  showErr('q3', !q3v);
+  if (!q1v || q2v.length < 20 || !q3v) return;
+
+  state.q1 = q1v; state.q2 = q2v; state.q3 = q3v;
+  document.getElementById('submit').disabled = true;
+  finish('complete', CFG.COMPLETE_URL);
+});
+</script>
+</body>
+</html>
