@@ -158,7 +158,14 @@ var CFG = {
   TERMINATE_URL : 'https://spectrumsurveys.com/surveydone?st=18&transaction_id={PID}',
   QUALITY_URL   : 'https://spectrumsurveys.com/surveydone?st=20&transaction_id={PID}',
   MIN_OPEN_CHARS: 15,         // minimum length for the open-end screener
-  REQUIRE_PID   : true        // set false to test the form outside the panel
+  REQUIRE_PID   : true,       // set false to test the form outside the panel
+
+  /* Parameters PureSpectrum puts on the entry link that must be echoed back on
+     the redirect. 'bsec' is the Basic Security token; without it the return is
+     rejected as Buyer_Hash_Security. Not a secret we hold - it arrives on the
+     inbound URL, so echoing it leaks nothing. If PureSpectrum wants it under a
+     different name on the way back, change the value here to the outbound name. */
+  ECHO_PARAMS   : { bsec: 'bsec' }
 };
 
 /* Read the id off the raw URL rather than via URLSearchParams. Panel entry
@@ -169,6 +176,16 @@ function readParam_(name) {
   return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
 }
 var PID   = readParam_(CFG.PID_PARAM);
+
+/* Re-attach the panel's own passthrough parameters to a redirect URL. */
+function withEcho_(url) {
+  for (var inName in CFG.ECHO_PARAMS) {
+    if (!Object.prototype.hasOwnProperty.call(CFG.ECHO_PARAMS, inName)) continue;
+    var v = readParam_(inName);
+    if (v) url += '&' + CFG.ECHO_PARAMS[inName] + '=' + encodeURIComponent(v);
+  }
+  return url;
+}
 var T0    = Date.now();
 var state = { s1:'', s2:'', q1:'', q2:'', q3:'' };
 
@@ -254,7 +271,7 @@ function finish(outcome, redirectTo) {
   var go = function (signed) {
     if (went) return;
     went = true;
-    location.replace(signed || redirectTo.replace('{PID}', encodeURIComponent(PID)));
+    location.replace(signed || withEcho_(redirectTo.replace('{PID}', encodeURIComponent(PID))));
   };
 
   fetch(CFG.ENDPOINT, {
