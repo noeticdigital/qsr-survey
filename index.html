@@ -47,6 +47,8 @@
   button:disabled{opacity:.5;cursor:not-allowed}
   .msg{text-align:center;padding:56px 20px;color:var(--muted)}
   .hide{display:none}
+  .thanks{color:var(--ink);font-size:1rem;line-height:2}
+  .thanks-en{display:block;margin-top:10px;color:var(--muted);font-size:.85rem}
   @media (prefers-color-scheme:dark){
     :root{--bg:#141414;--card:#1e1e1e;--ink:#ededed;--muted:#9a9a9a;
       --line:#333;--accent:#5b8def}
@@ -158,7 +160,7 @@ var CFG = {
   TERMINATE_URL : 'https://spectrumsurveys.com/surveydone?st=18&transaction_id={PID}',
   QUALITY_URL   : 'https://spectrumsurveys.com/surveydone?st=20&transaction_id={PID}',
   MIN_OPEN_CHARS: 15,         // minimum length for the open-end screener
-  REQUIRE_PID   : true,       // set false to test the form outside the panel
+  REQUIRE_PID   : false,      // false = open to anyone, not just panel respondents
 
   /* Parameters PureSpectrum puts on the entry link that must be echoed back on
      the redirect. 'bsec' is the Basic Security token; without it the return is
@@ -175,7 +177,17 @@ function readParam_(name) {
   var m = new RegExp('[?&]' + name + '=([^&#]*)').exec(location.href);
   return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : '';
 }
-var PID   = readParam_(CFG.PID_PARAM);
+var PANEL_PID = readParam_(CFG.PID_PARAM);
+var IS_DIRECT = !PANEL_PID;
+
+/* Anyone arriving without a panel id gets a generated one, so direct responses
+   stay individually identifiable in the sheet and never collide on dedupe. */
+function directId_() {
+  var s = '', c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  for (var i = 0; i < 10; i++) s += c[Math.floor(Math.random() * c.length)];
+  return 'DIRECT-' + s;
+}
+var PID   = PANEL_PID || directId_();
 
 /* Re-attach the panel's own passthrough parameters to a redirect URL. */
 function withEcho_(url) {
@@ -276,6 +288,13 @@ function finish(outcome, redirectTo) {
   var go = function (signed) {
     if (went) return;
     went = true;
+    if (IS_DIRECT) {                     // no panel to return to
+      var d = document.getElementById('done');
+      d.innerHTML = 'ご回答ありがとうございました。<br>回答を送信しました。'
+                  + '<span class="thanks-en">Thank you \u2014 your response has been recorded.</span>';
+      d.classList.add('thanks');
+      return;
+    }
     location.replace(signed || withEcho_(redirectTo.replace('{PID}', encodeURIComponent(PID))));
   };
 
